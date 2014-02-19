@@ -64,7 +64,8 @@ Meteor.methods({
 
 // Returns a cursor of posts belonging to the specified user.
 getPostList = function(userId) {
-    var postList = Posts.find({ownerId: userId}, {fields: {title: 1}});
+    var postList = Posts.find({ownerId: userId},
+        {fields: {title: 1}}, {sort: {_id: -1}});
     if(postList.count() > 0) {
         return postList;
     }

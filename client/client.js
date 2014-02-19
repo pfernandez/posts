@@ -253,6 +253,7 @@ Template.postItem.postClass = function() {
 
 Template.postItem.events({
     'click .list-group-item': function(e) {
+        e.preventDefault();
         if(! Session.get('postToDelete')._id) {
             post.id(this._id);
         }
