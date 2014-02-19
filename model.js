@@ -1,9 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Songs: { title, lyrics, ownerId }
+// Posts: { title, content, ownerId }
 
-Songs = new Meteor.Collection('songs');
+Posts = new Meteor.Collection('posts');
 
-Songs.allow({
+Posts.allow({
     insert: function(userId, doc) {
         // Users must be logged in, and the document must be owned by the user.
         return (userId && doc.ownerId === userId);
@@ -19,17 +19,17 @@ Songs.allow({
     fetch: ['ownerId']
 });
 
-Songs.deny({
+Posts.deny({
     update: function(userId, docs, fields, modifier) {
         // The user may only edit particular fields.
-        return (_.without(fields, 'title', 'lyrics').length > 0);
+        return (_.without(fields, 'title', 'content').length > 0);
     }
 });
 
 Meteor.methods({
 
-    // Insert a new song into the database.
-    newSong: function(properties) {
+    // Insert a new post into the database.
+    newPost: function(properties) {
     
         var user = Meteor.userId();
     
@@ -39,54 +39,70 @@ Meteor.methods({
                 properties = {};
             }
             
-            properties.title = getUniqueTitle(properties.title);
+            if(properties.title) {
+                properties.title = getUniqueTitle(properties.title);
+            }
+            else {
+                properties.title = '';
+            }
             
-            if(! properties.lyrics) {
-                properties.lyrics = '';
+            if(! properties.content) {
+                properties.content = '';
             }
         
             // Make sure only allowed properties are inserted.
-            var song = _.extend(_.pick(properties, 'title', 'lyrics'), {
+            var post = _.extend(_.pick(properties, 'title', 'content'), {
                 ownerId: user, created: new Date().getTime()
             });
 
-            properties._id = Songs.insert(song);
+            properties._id = Posts.insert(post);
             
             return properties;
         }
     },
 });
 
-// Returns a cursor of songs belonging to the specified user.
-getSongList = function(userId) {
-    return Songs.find({ownerId: userId}, {fields: {title: 1}});
+// Returns a cursor of posts belonging to the specified user.
+getPostList = function(userId) {
+    var postList = Posts.find({ownerId: userId}, {fields: {title: 1}});
+    if(postList.count() > 0) {
+        return postList;
+    }
+    else {
+        return null;
+    }
 }
 
 // If the desired title is not unique, append and integer to it.
 getUniqueTitle = function(title) {
 
-    if(! title) {
-        title = 'Untitled Song';
-    }
-
-    var songs = getSongList(Meteor.userId()).fetch(),
+    var postList = getPostList(Meteor.userId());
+    
+    if(postList) {
+    
+        if(! title) {
+            title = 'Untitled Post';
+        }
+        
+        var posts = postList.fetch(),
         newTitle = title,
         matchFound = true,
         count = 1;
-    
-    while(matchFound) {
-        matchFound = false;
-        for(var i = 0; i < songs.length; i++) {
-            if(newTitle === songs[i].title) {
-                newTitle = title + ' ' + count;
-                matchFound = true;
-                count++;
+        
+        while(matchFound) {
+            matchFound = false;
+            for(var i = 0; i < posts.length; i++) {
+                if(newTitle === posts[i].title) {
+                    newTitle = title + ' ' + count;
+                    matchFound = true;
+                    count++;
+                }
             }
         }
-    }
-    
-    if(count > 1) {
-        title = newTitle;
+        
+        if(count > 1) {
+            title = newTitle;
+        }
     }
     
     return title;
@@ -95,11 +111,11 @@ getUniqueTitle = function(title) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Meteor.users: { currentSong }
+// Meteor.users: { currentPost }
 
 Meteor.users.allow({
     update: function(userId, doc, fields, modifier) {
-        // Users can only update the current song ID.
-        return (fields.length === 1 && _.contains(fields, 'currentSongId'));
+        // Users can only update the current post ID.
+        return (fields.length === 1 && _.contains(fields, 'currentPostId'));
     }
 });

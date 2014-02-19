@@ -1,0 +1,19 @@
+<template name="post">
+
+    <div id="controls" class="clearfix">
+        <div class="pull-left input-group input-group-lg">
+            <input type="text" tabindex="1" class="form-control"
+                id="post-title" placeholder="Enter a title"
+                {{#if currentUser}}value="{{postTitle}}"{{/if}}>
+        </div>
+        <p class="save-indicator pull-right soft-text">
+            {{#isolate}}{{saveIndicator}}{{/isolate}}
+        </p>
+    </div>
+
+    <div id="editor-panel" class="panel panel-default">
+        <div tabindex="2" data-placeholder="Type some content..." 
+            id="editor" class="panel-body" contenteditable="true"
+            >{{#if currentUser}}{{{postContent}}}{{/if}}</div>
+    </div>
+</template>

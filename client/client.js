@@ -8,71 +8,95 @@ This file will be executed only on the client.
 // Helper Variables and Functions
 
 
-var id = null,              // the _id of the current song
-    justLoggedIn = false,   // so we can store an entered song on login
+var justLoggedIn = false,   // so we can store an entered post on login
     savedSelection = null,  // temp storage for the Rangy library
     editorHasFocus = false, // used to return focus to editor on hot reload
-    untitled = false;       // used to avoid undesired hot reload of title input
+    timeOut = null,
+    interval = null;
 
+Session.setDefault('saving', false);
 
 // Reactive data storage for the delete dialog.
-Session.setDefault('songToDelete', {_id: null, title: null});
+Session.setDefault('postToDelete', {_id: null, title: null});
 
-
-// Store a song to the user database to be retrieved on the next visit.
-var setCurrentSong = function(songId) {
-    id = songId;
-    Meteor.users.update({_id: Meteor.userId()}, {$set: {currentSongId: id}});
-}
-
-
-// Set the id to the user's most recently visited song.
-var loadMostRecentSong = function() {
-    var user = Meteor.users.findOne({_id: Meteor.userId()},
-        {fields: {currentSongId: 1}});
-    if(user) {
-        id = user.currentSongId;
-    }
-}
-
-
-// Attempt to add a new song on the server, and store it's ID as
-// the user's current song if successful.
-var addSong = function(properties) {
-    Meteor.call('newSong', properties, function(error, newSong) {
-        if(error) {
-            console.log(error.reason);
+var post = {
+    
+    id: function(postId) {
+        if(postId || postId === null) {
+            Session.set('post_id', postId);
+            Meteor.users.update({_id: Meteor.userId()},
+                {$set: {currentPostId: this.id()}}
+            );
         }
-        else if(newSong) {
-        
-            setCurrentSong(newSong._id);
-            
-            // If a title was passed in...
-            if(properties && properties.hasOwnProperty('title')) {
-                untitled = false;
+        else {
+            return Session.get('post_id');
+        }
+    },
+
+    // Store a post to the user database to be retrieved on the next visit.
+    setCurrent: function(postId) {
+        this.id(postId);
+
+    },
+    
+    // Set the id to the user's most recently visited post.
+    loadMostRecent: function() {
+        var user = Meteor.users.findOne({_id: Meteor.userId()},
+            {fields: {currentPostId: 1}});
+        if(user) {
+            this.id(user.currentPostId);
+        }
+    },
+
+    // Attempt to add a new post on the server, and store it's ID as
+    // the user's current post if successful.
+    add: function(properties) {
+        var that = this;
+        Meteor.call('newPost', properties, function(error, newPost) {
+            if(error) {
+                console.log(error.reason);
             }
-            else {
-                untitled = true;
+            else if(newPost) {
+                that.id(newPost._id);
+            }
+        });
+    },
+    
+    // Returns a post title, or updates the title if provided.
+    title: function(newTitle) {
+        if(newTitle) {
+            Posts.update({_id: post.id()}, {$set: {title: newTitle}});
+        }
+        else {
+            var postObj = Posts.findOne({_id: this.id()}, {fields: {title: 1}});
+            if(postObj) {
+                return postObj.title;
             }
         }
-    });
+    },
+    
+    // Returns a post's content, or updates the content if provided.
+    content: function(newContent, callback) {
+        if(newContent) {
+    	   Posts.update({_id: post.id()},
+	            {$set: {content: _.escape(newContent)}},
+	            function() { callback(); }
+	        );
+	    }
+        else {
+            postObj = Posts.findOne({_id: this.id()},{fields: {content: 1}});
+            if(postObj) {
+                return _.unescape(postObj.content);
+            }
+        }
+    },
+
 }
 
 
-// Returns a song title, or an empty string if it's untitled.
-var getTitle = function(songId) {
-    var songObj = Songs.findOne({_id: songId}, {fields: {title: 1}});
-    if(songObj && ! untitled) {
-        return songObj.title;
-    }
-    else {
-        return '';
-    }
-}
 
 
-
-// Retrieve the current song ID and title on login or refresh.
+// Retrieve the current post ID and title on login or refresh.
 Deps.autorun(function() {
 
     if(Meteor.loggingIn()) {
@@ -81,82 +105,100 @@ Deps.autorun(function() {
 
     var userId = Meteor.userId();
     
-    if(userId && ! id) {
-        // If there was a song begun before login, add it to the database.
-        // Otherwise load the most recent song.
+    if(userId && ! post.id()) {
+        // If there was a post begun before login, add it to the database.
+        // Otherwise load the most recent post.
         if(justLoggedIn) {
         
-            var titleElement = document.getElementById('song-title'),
-                lyricsElement = document.getElementById('editor'),
+            var titleElement = document.getElementById('post-title'),
+                contentElement = document.getElementById('editor'),
                 newTitle = null,
-                newLyrics = null;
+                newContent = null;
                 
             if(titleElement) {
                 var newTitle = titleElement.value;
             }
             
-            if(lyricsElement) {
-                var newLyrics = lyricsElement.innerHTML;
+            if(contentElement) {
+                var newContent = contentElement.innerHTML;
             }
             
-            if(newTitle || newLyrics) {
-                addSong({title: newTitle, lyrics: newLyrics});
+            if(newTitle || newContent) {
+                post.add({title: newTitle, content: newContent});
             }
             
             justLoggedIn = false;
         }
         
-        loadMostRecentSong();
+        post.loadMostRecent();
     }
-    else if(! userId && id) {
-        // The user just logged out, so remove the current song.
-        id = null;
+    else if(! userId && post.id()) {
+        // The user just logged out, so remove the current post.
+        post.id(null);
     }
 });
 
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// song.html
+// post.html
 
 
-Template.song.songTitle = function() {
-    return getTitle(id);
+Template.post.postTitle = function() {
+    return post.title();
 }
 
-Template.song.songLyrics = function() {
-    if(id) {
-        return _.unescape(
-            Songs.findOne({_id: id},{fields: {lyrics: 1}}).lyrics
-        );
+Template.post.postContent = function() {
+    return post.content();
+}
+
+Template.post.saveIndicator = function() {
+    if(Session.get('saving')) {
+        return 'Saving...';
+    }
+    else {
+        return 'Saved.';
     }
 }
 
-Template.song.events({
+Template.post.events({
 
     // Store the title on keyup in the input field.
     'change input' : function(e) {
         var newTitle = getUniqueTitle(e.target.value);
-        if(id) {
-		    Songs.update({_id: id}, {$set: {title: newTitle}});
-		    untitled = false;
+        if(post.id()) {
+		    post.title(newTitle);
 		}
 		else {
-		    addSong({title: newTitle});
+		    post.add({title: newTitle});
 		}
     },
 
-    // Store the lyrics on keyup in the editor.
-    'keyup #editor' : function(e) {
+    // Store the content in the editor.
+    'input #editor' : function(e) {
         savedSelection = rangy.saveSelection();
-        if(id) {
-	        Songs.update({_id: id},
-	            {$set: {lyrics: _.escape(e.target.innerHTML)}}
-	        );
-	    }
-	    else {
-	        addSong({lyrics: _.escape(e.target.innerHTML)});
-	    }
+        if(post.id()) {
+        
+            // If "saving..." is not visible, show it.
+            if(! interval) {
+                Session.set('saving', true);
+            }
+
+            // Store the content to database. If successful, check every 3
+            // seconds to see if "saving..." is visible. If it is, turn it off.
+            post.content(e.target.innerHTML, function() {
+                if(! interval) {
+                    interval = Meteor.setInterval(function() {
+                        Session.set('saving', false);
+                        Meteor.clearInterval(interval);
+                        interval = null;
+                    }, 3000);
+                } 
+            });
+        }
+        else {
+            post.add({content: _.escape(e.target.innerHTML)});
+        }
     },
     
     'focus #editor': function() {
@@ -168,69 +210,59 @@ Template.song.events({
     }
 });
 
-Template.song.rendered = function() {
-
+Template.post.rendered = function() {
     // Restore selection and/or cursor postion when the editor is redrawn.
     if(savedSelection) {
         rangy.restoreSelection(savedSelection);
-    }
-    
-    // Updating the song list causes the editor to lose focus. Refocus it.
-    if(editorHasFocus) {
-        this.find('#editor').focus();
     }
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// songlist.html
+// postlist.html
 
-Template.songList.userSongs = function() {
-    return getSongList(Meteor.userId());
+Template.postList.userPosts = function() {
+    return getPostList(Meteor.userId());
 }
 
-Template.songList.events({
-    // add an empty song when the button is clicked.
-    'click .addSong' : function(e) {
-        addSong();
+Template.postList.events({
+    // add an empty post when the button is clicked.
+    'click .addPost' : function(e) {
+        post.add();
     },
 });
 
-Template.songList.rendered = function() {
+Template.postList.rendered = function() {
 
-    // If the user has any songs, make sure one is always current.
+    // If the user has any posts, make sure one is always current.
     var list = this.findAll('.list-group-item');
     if(list.length > 0 && ! this.find('.active')) {
         list[list.length-1].click();
     }
+    
+    // Updating the post list causes the editor to lose focus. Refocus it.
+    if(editorHasFocus) {
+       document.getElementById('editor').focus();
+    }
 }
 
-Template.songItem.href = function() {
-    return '/' + this._id;
+Template.postItem.postClass = function() {
+    return (post.id() === this._id) ? 'active' : '';
 }
 
-Template.songItem.songClass = function() {
-    return (id === this._id) ? 'active' : '';
-}
-
-Template.songItem.events({
+Template.postItem.events({
     'click .list-group-item': function(e) {
-        e.preventDefault();
-        if(! Session.get('songToDelete')._id) {
-            untitled = false;
-            setCurrentSong(this._id);
+        if(! Session.get('postToDelete')._id) {
+            post.id(this._id);
         }
     }
 });
 
-Template.songItem.events({
-    // Remove song when the button is clicked.
+Template.postItem.events({
+    // Remove post when the button is clicked.
     'click .close' : function(e) {
-        Session.set('songToDelete', {
-            _id: this._id,
-            title: getTitle(this._id)
-        });
+        Session.set('postToDelete', this);
     }
 });
 
@@ -240,19 +272,19 @@ Template.songItem.events({
 // delete.html
 
 
-Template.deleteSongDialogBody.deleteSongTitle = function() {
-    return Session.get('songToDelete').title;
+Template.deletePostDialogBody.deletePostTitle = function() {
+    return Session.get('postToDelete').title;
 }
 
-Template.deleteSongDialog.events({
-    // Remove song when the button is clicked.
-    'click .removeSong' : function(e) {
-        var songId = Session.get('songToDelete')._id;
-        if(songId === id) {
-            setCurrentSong(null);
+Template.deletePostDialog.events({
+    // Remove post when the button is clicked.
+    'click .removePost' : function(e) {
+        var postId = Session.get('postToDelete')._id;
+        if(postId === post.id()) {
+            post.id(null);
         }
-        Songs.remove(songId);
-        Session.set('songToDelete', {_id: null, title: 'this song'});
+        Posts.remove(postId);
+        Session.set('postToDelete', {_id: null, title: 'this post'});
     }
 });
 

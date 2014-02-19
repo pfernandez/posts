@@ -1,0 +1,28 @@
+<template name="postList">
+    {{#if currentUser}}
+        {{#if userPosts}}
+            <div class="list-group">
+                {{#each userPosts}}
+                    {{> postItem}}
+                {{/each}}
+            </div>
+            <button type="button" class="addPost btn btn-default">
+                <span class="glyphicon glyphicon-plus"></span> New post
+            </button>
+        {{/if}}
+    {{/if}}
+</template>
+
+<template name="postItem">
+    <a href="/{{_id}}" class="list-group-item toggle in {{postClass}}">
+        {{#if title}}
+            {{title}}
+        {{else}}
+            <span class="soft-text">(untitled)</span>
+        {{/if}}
+        <button type="button" class="close pull-right"
+            data-toggle="modal" data-target="#deletePostModal">
+            &times;
+        </button>
+    </a>
+</template>

@@ -2,7 +2,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Songnotes</title>
+    <title>Posts</title>
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -14,11 +14,11 @@
 
 <template name="layout">
 
-    {{yield 'deleteSongDialog'}}
+    {{yield 'deletePostDialog'}}
     
     <div class="navbar navbar-default" role="navigation">
         <div class="navbar-header">
-            <a class="navbar-brand" href="#">Songnotes</a>
+            <a class="navbar-brand" href="#">Posts</a>
         </div>
         <div class="navbar-collapse collapse">
         <ul class="nav navbar-nav navbar-right">
@@ -29,8 +29,8 @@
 
     <div class="container-fluid">
         <div class="row">
-            <aside id="songList" class="col-md-3">{{yield 'aside'}}</aside>
-            <article id="song" class="col-md-6">{{yield}}</div>
+            <aside id="postList" class="col-md-3">{{yield 'aside'}}</aside>
+            <article id="post" class="col-md-6">{{yield}}</div>
         </div>
     </div>
     

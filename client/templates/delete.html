@@ -1,20 +1,20 @@
-<template name="deleteSongDialog">
-    <div  id="deleteSongModal" class="modal fade">
+<template name="deletePostDialog">
+    <div  id="deletePostModal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal"
                 aria-hidden="true">&times;</button>
-            <h4 class="modal-title">Delete Song</h4>
+            <h4 class="modal-title">Delete Post</h4>
           </div>
           <div class="modal-body">
-            {{> deleteSongDialogBody}}
+            {{> deletePostDialogBody}}
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">
                 Cancel
             </button>
-            <button type="button" class="removeSong btn btn-primary"
+            <button type="button" class="removePost btn btn-primary"
                 data-dismiss="modal">
                 Delete
             </button>
@@ -24,6 +24,13 @@
     </div><!-- /.modal -->
 </template>
 
-<template name="deleteSongDialogBody">
-    <p>Are you sure you want to delete {{deleteSongTitle}}?</p>
+<template name="deletePostDialogBody">
+    <p>
+        Are you sure you want to delete 
+        {{#if deletePostTitle}}
+            {{deletePostTitle}}?
+        {{else}}
+            (untitled)?
+        {{/if}}
+    </p>
 </template>
