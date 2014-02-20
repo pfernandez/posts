@@ -22,7 +22,7 @@ Session.setDefault('postToDelete', {_id: null, title: null});
 var post = {
     
     // If no argument is provided, returns the id of the current post.
-    // Otherwise sets the current song to the specified id. Pass NULL
+    // Otherwise sets the current song to the specified id. Pass in NULL
     // to clear all post data.
     id: function(postId) {
         if(postId || postId === null) {
@@ -64,7 +64,7 @@ var post = {
     // Returns a post title, or updates the title if provided.
     title: function(newTitle) {
         if(newTitle) {
-            Posts.update({_id: post.id()}, {$set: {title: newTitle}});
+            Posts.update({_id: this.id()}, {$set: {title: newTitle}});
         }
         else {
             var postObj = Posts.findOne({_id: this.id()}, {fields: {title: 1}});
@@ -132,7 +132,9 @@ Deps.autorun(function() {
     else if(! userId && post.id()) {
         // The user just logged out, so remove the current post.
         post.id(null);
-        document.getElementById('post-title').value = '';
+        
+        // This is a hack, because the title wasn't re-rendering on logout.
+        //document.getElementById('post-title').value = '';
     }
 });
 
