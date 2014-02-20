@@ -21,24 +21,23 @@ Session.setDefault('postToDelete', {_id: null, title: null});
 
 var post = {
     
+    // If no argument is provided, returns the id of the current post.
+    // Otherwise sets the current song to the specified id. Pass NULL
+    // to clear all post data.
     id: function(postId) {
         if(postId || postId === null) {
             Session.set('post_id', postId);
-            Meteor.users.update({_id: Meteor.userId()},
-                {$set: {currentPostId: this.id()}}
-            );
         }
         else {
             return Session.get('post_id');
         }
+        if(postId) {
+            Meteor.users.update({_id: Meteor.userId()},
+                {$set: {currentPostId: this.id()}}
+            );
+        }
     },
 
-    // Store a post to the user database to be retrieved on the next visit.
-    setCurrent: function(postId) {
-        this.id(postId);
-
-    },
-    
     // Set the id to the user's most recently visited post.
     loadMostRecent: function() {
         var user = Meteor.users.findOne({_id: Meteor.userId()},
@@ -50,7 +49,7 @@ var post = {
 
     // Attempt to add a new post on the server, and store it's ID as
     // the user's current post if successful.
-    add: function(properties) {
+    add: function(properties) {        
         var that = this;
         Meteor.call('newPost', properties, function(error, newPost) {
             if(error) {
@@ -94,8 +93,6 @@ var post = {
 }
 
 
-
-
 // Retrieve the current post ID and title on login or refresh.
 Deps.autorun(function() {
 
@@ -135,6 +132,7 @@ Deps.autorun(function() {
     else if(! userId && post.id()) {
         // The user just logged out, so remove the current post.
         post.id(null);
+        document.getElementById('post-title').value = '';
     }
 });
 
@@ -207,6 +205,11 @@ Template.post.events({
     
     'blur #editor': function() {
         editorHasFocus = false;
+    },
+    
+    'click .logInToSave': function() {
+        $('.dropdown-toggle').click();
+        return false;
     }
 });
 

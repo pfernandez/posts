@@ -7,7 +7,9 @@
                 {{#if currentUser}}value="{{postTitle}}"{{/if}}>
         </div>
         <p class="save-indicator pull-right soft-text">
-            {{#isolate}}{{saveIndicator}}{{/isolate}}
+            {{#if currentUser}}
+                {{#isolate}}{{saveIndicator}}{{/isolate}}
+            {{/if}}
         </p>
     </div>
 
@@ -16,4 +18,9 @@
             id="editor" class="panel-body" contenteditable="true"
             >{{#if currentUser}}{{{postContent}}}{{/if}}</div>
     </div>
+    {{#unless currentUser}}
+        <button type="button" class="logInToSave pull-right btn btn-default">
+            Log in to save
+        </button>
+    {{/unless}}
 </template>

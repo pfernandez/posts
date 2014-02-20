@@ -16,21 +16,21 @@
 
     {{yield 'deletePostDialog'}}
     
-    <div class="navbar navbar-default" role="navigation">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="#">Posts</a>
-        </div>
-        <div class="navbar-collapse collapse">
-        <ul class="nav navbar-nav navbar-right">
-            {{loginButtons}}
-        </ul>
+    <div class="navbar navbar-default navbar-static-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">Posts</a>
+            </div>
+            <ul class="nav navbar-nav navbar-right">
+                {{loginButtons}}
+            </ul>
         </div>
     </div>
 
     <div class="container-fluid">
         <div class="row">
             <aside id="postList" class="col-md-3">{{yield 'aside'}}</aside>
-            <article id="post" class="col-md-6">{{yield}}</div>
+            <article id="post" class="col-md-6">{{yield}}</article>
         </div>
     </div>
     
